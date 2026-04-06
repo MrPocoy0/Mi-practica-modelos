@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Mental de App Bancaria</title>
+    <!-- Incluir GoJS desde CDN -->
+    <script src="https://gojs.net/latest/release/go.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1, p {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        #diagram-container {
+            width: 100%;
+            height: 60vh;
+            background-color: #2c2c44;
+            border: 2px solid #5a5a8a;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            max-width: 900px;
+        }
+
+        #controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #5a5a8a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #7b7bb3;
+            transform: translateY(-2px);
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .user-color { background-color: #4CAF50; } /* Verde para el modelo mental del usuario */
+        .system-color { background-color: #F44336; } /* Rojo para el modelo conceptual del sistema */
+    </style>
+</head>
+<body>
+
+    <h1>Mapa Mental: De la Percepción del Usuario al Sistema Real</h1>
+    <p>Haz clic en el botón para alternar entre el **modelo mental** del usuario novato y el **modelo conceptual** del sistema bancario.</p>
+
+    <div id="diagram-container"></div>
+    <div id="controls">
+        <button id="toggleButton">Ver Modelo Conceptual del Sistema</button>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-box user-color"></div>
+                <span>Modelo Mental del Usuario</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box system-color"></div>
+                <span>Modelo Conceptual del Sistema</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Paso 1: Inicialización del diagrama
+        // Se asegura de que el script se ejecute después de que el documento HTML esté completamente cargado.
+        document.addEventListener("DOMContentLoaded", () => {
+            const $ = go.GraphObject.make;
+            let diagram = $(go.Diagram, "diagram-container", {
+                // Utiliza un TreeLayout para una estructura de mapa mental clara.
+                layout: $(go.TreeLayout, {
+                    angle: 90,
+                    nodeSpacing: 50,
+                    layerSpacing: 80
+                }),
+                "undoManager.isEnabled": true // Habilitar la funcionalidad de deshacer/rehacer.
+            });
+        // Paso 2: Definición de la plantilla de los nodos
+        // Un "Node" representa un concepto o paso en el mapa mental.
+        diagram.nodeTemplate =
+            $(go.Node, "Auto",
+                { toolTip: $(go.Adornment, "Auto", $(go.Shape, { fill: "#2D2D2D" }), $(go.TextBlock,
+                { margin: 5, stroke: "white" }, new go.Binding("text", "tooltip")))},
+                $(go.Shape, "RoundedRectangle", {
+                    strokeWidth: 2,
+                    stroke: null,
+                    portId: "" // Permite enlaces a/desde el nodo.
+                }, new go.Binding("fill", "color")),
+                $(go.TextBlock, {
+                    margin: 10,
+                    stroke: "#ffffff",
+                    font: "16px sans-serif",
+                    wrap: go.TextBlock.WrapFit,
+                    textAlign: "center"
+                }, new go.Binding("text", "text"))
+            );
+
+        // Paso 3: Definición de la plantilla de los enlaces
+        // Un "Link" conecta los nodos para mostrar la relación.
+        diagram.linkTemplate =
+            $(go.Link, {
+                    routing: go.Link.Orthogonal,
+                    corner: 10
+                },
+                $(go.Shape, { strokeWidth: 2, stroke: "#777" }),
+                $(go.Shape, { toArrow: "Standard", fill: "#777", stroke: null })
+            );
+
+        // Paso 4: Creación de los datos para ambos modelos
+        // Aquí se definen los nodos y enlaces que representan los dos modelos.
+        // Modelo Mental del Usuario (simple e intuitivo)
+        const userMentalModel = {
+            nodes: [
+                { key: "login", text: "Abrir la App", color: "#4CAF50", tooltip: "El usuario solo piensa en 'abrir y entrar'." },
+                { key: "transfer", text: "Transferir Dinero", color: "#4CAF50", tooltip: "Un solo paso para la acción." },
+                { key: "check", text: "Ver mi Saldo", color: "#4CAF50", tooltip: "Un paso directo, sin sub-niveles." },
+                { key: "pay_bill", text: "Pagar Factura", color: "#4CAF50", tooltip: "No percibe la complejidad detrás del pago." },
+                { key: "logout", text: "Cerrar Sesión", color: "#4CAF50", tooltip: "Un simple botón para salir." }
+            ],
+            links: [
+                { from: "login", to: "transfer" },
+                { from: "login", to: "check" },
+                { from: "login", to: "pay_bill" },
+                { from: "transfer", to: "logout" },
+                { from: "check", to: "logout" },
+                { from: "pay_bill", to: "logout" }
+            ]
+        };
+
+        // Modelo Conceptual del Sistema (complejo y detallado)
+        const systemConceptualModel = {
+            nodes: [
+                { key: "login", text: "Inicio de Sesión", color: "#F44336", tooltip: "Verificación de credenciales en el servidor." },
+                { key: "two_factor_auth", text: "Autenticación de 2 Factores (2FA)", color: "#F44336", tooltip: "El sistema pide un código enviado al teléfono o correo." },
+                { key: "dashboard", text: "Cargar el Dashboard", color: "#F44336", tooltip: "El sistema recupera múltiples datos: saldo, transacciones, etc." },
+                { key: "select_action", text: "Seleccionar Acción (Transferir/Pagar)", color: "#F44336", tooltip: "El usuario elige la tarea." },
+                { key: "transfer_form", text: "Formulario de Transferencia", color: "#F44336", tooltip: "Se valida el formato de los datos ingresados." },
+                { key: "verify_balance", text: "Verificar Saldo en Backend", color: "#F44336", tooltip: "El sistema comprueba si hay fondos suficientes." },
+                { key: "validate_recipient", text: "Validar Destinatario", color: "#F44336", tooltip: "El sistema valida que la cuenta de destino es válida." },
+                { key: "execute_transfer", text: "Ejecutar Transacción", color: "#F44336", tooltip: "Se realiza la operación atómica en la base de datos." },
+                { key: "generate_receipt", text: "Generar Recibo y Notificación", color: "#F44336", tooltip: "El sistema crea un registro y notifica al usuario." },
+                { key: "logout", text: "Proceso de Cierre de Sesión", color: "#F44336", tooltip: "El sistema invalida el token de sesión." }
+            ],
+            links: [
+                { from: "login", to: "two_factor_auth" },
+                { from: "two_factor_auth", to: "dashboard" },
+                { from: "dashboard", to: "select_action" },
+                { from: "select_action", to: "transfer_form" },
+                { from: "select_action", to: "generate_receipt" },
+                { from: "transfer_form", to: "verify_balance" },
+                { from: "verify_balance", to: "validate_recipient" },
+                { from: "validate_recipient", to: "execute_transfer" },
+                { from: "execute_transfer", to: "generate_receipt" },
+                { from: "generate_receipt", to: "logout" },
+                { from: "dashboard", to: "logout" }
+            ]
+        };
+
+        // Paso 5: Función para alternar entre los modelos
+        let isUserView = true;
+        const toggleButton = document.getElementById("toggleButton");
+        const diagramDiv = document.getElementById("diagram-container");
+
+        const updateDiagram = () => {
+            diagram.model = new go.GraphLinksModel(
+                isUserView ? userMentalModel.nodes : systemConceptualModel.nodes,
+                isUserView ? userMentalModel.links : systemConceptualModel.links
+            );
+            // Centrar el diagrama al cambiar el modelo.
+            diagram.centerRect(diagram.documentBounds);
+        };
+
+        // Paso 6: Establecer el modelo inicial
+        // El diagrama comienza mostrando el modelo mental del usuario.
+        updateDiagram();
+
+        // Paso 7: Agregar el evento de clic al botón
+        toggleButton.addEventListener('click', () => {
+            isUserView = !isUserView;
+            updateDiagram();
+            toggleButton.textContent = isUserView ? "Ver Modelo Conceptual del Sistema" : "Ver Modelo Mental del Usuario";
+        });
+    });
+    </script>
+</body>
+</html>
